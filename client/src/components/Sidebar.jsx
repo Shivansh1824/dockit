@@ -31,14 +31,14 @@ const Sidebar = ({ open, onClose }) => {
 
       <aside
         className={`
-          fixed top-0 left-0 h-full w-60 bg-white border-r border-gray-100 z-30 flex flex-col
-          transform transition-transform duration-200 ease-in-out
+          fixed top-0 left-0 h-full w-60 bg-surface border-r border-border z-30 flex flex-col
+          transform transition-transform duration-300 ease-spring
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:static md:z-auto md:flex
         `}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-gray-100">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-border">
           <div className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -65,10 +65,10 @@ const Sidebar = ({ open, onClose }) => {
               to={to}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ease-spring ${
                   isActive
                     ? 'bg-brand-50 text-brand-500'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    : 'text-gray-600 hover:bg-surface-elevated hover:text-gray-900 hover:translate-x-1'
                 }`
               }
             >
@@ -86,7 +86,7 @@ const Sidebar = ({ open, onClose }) => {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-gray-100">
+        <div className="px-4 py-4 border-t border-border">
           <p className="text-xs text-gray-400">Dockit v1.0 · Team Task Manager</p>
         </div>
       </aside>

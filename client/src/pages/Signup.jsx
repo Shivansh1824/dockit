@@ -18,10 +18,18 @@ const MOCK_MODE = import.meta.env.VITE_MOCK_AUTH === 'true';
 // ── Shared brand panel (same as Login) ──
 const BrandPanel = () => (
   <div
-    className="hidden md:flex md:w-5/12 lg:w-2/5 flex-col justify-between p-10 xl:p-14 shrink-0"
-    style={{ backgroundColor: '#01696f' }}
+    className="hidden md:flex md:w-5/12 lg:w-2/5 flex-col justify-between p-10 xl:p-14 shrink-0 relative overflow-hidden"
+    style={{ backgroundColor: '#003c43' }} // Darker base for atmosphere
   >
-    <div>
+    {/* Decorative atmospheric blobs */}
+    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+      <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[50%] rounded-full opacity-30 blur-[80px]" style={{ background: 'radial-gradient(circle, #33afb4 0%, transparent 70%)' }} />
+      <div className="absolute top-[60%] -right-[20%] w-[60%] h-[60%] rounded-full opacity-20 blur-[100px]" style={{ background: 'radial-gradient(circle, #01696f 0%, transparent 70%)' }} />
+      {/* Subtle grid texture */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+    </div>
+    
+    <div className="relative z-10">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow">
           <DockitLogo size={20} color="#01696f" />
@@ -57,8 +65,8 @@ const BrandPanel = () => (
       </div>
     </div>
 
-    <div className="border-t border-white/20 pt-6">
-      <p className="text-white/60 text-sm italic leading-relaxed">
+    <div className="border-t border-white/10 pt-6 relative z-10">
+      <p className="text-white/70 text-sm font-medium leading-relaxed">
         "We shipped our sprint two days early after switching to Dockit."
       </p>
       <p className="text-white/40 text-xs mt-2">— Product Manager, B2B SaaS</p>
@@ -88,10 +96,10 @@ const GoogleButton = () => (
 );
 
 const inputClass = (hasError) =>
-  `w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all ${
+  `w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition-all duration-300 ease-spring ${
     hasError
-      ? 'border-red-400 bg-red-50 focus:ring-2 focus:ring-red-100'
-      : 'border-gray-200 bg-white focus:border-[#01696f] focus:ring-2 focus:ring-[#01696f]/10'
+      ? 'border-red-300 bg-red-50 focus:ring-4 focus:ring-red-500/10 focus:border-red-500'
+      : 'border-border bg-surface focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 hover:border-brand-300'
   }`;
 
 const FormInput = ({ id, label, error, children }) => (
@@ -117,6 +125,7 @@ const Signup = () => {
   const [form, setForm] = useState({
     name: '',
     email: '',
+    jobId: '',
     password: '',
     confirmPassword: '',
     role: 'member',
@@ -132,6 +141,7 @@ const Signup = () => {
     if (!form.name.trim()) e.name = 'Full name is required';
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email';
+    if (!form.jobId.trim()) e.jobId = 'Job ID is required';
     if (!form.password) e.password = 'Password is required';
     else if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
     if (!form.confirmPassword) e.confirmPassword = 'Please confirm your password';
@@ -161,6 +171,7 @@ const Signup = () => {
         await api.post('/auth/signup', {
           name: form.name.trim(),
           email: form.email.trim(),
+          jobId: form.jobId.trim(),
           password: form.password,
           role: form.role,
         });
@@ -226,6 +237,18 @@ const Signup = () => {
                 onChange={handleChange}
                 placeholder="you@company.com"
                 className={inputClass(!!errors.email)}
+              />
+            </FormInput>
+
+            <FormInput id="jobId" label="Job ID / Employee ID" error={errors.jobId}>
+              <input
+                id="jobId"
+                type="text"
+                name="jobId"
+                value={form.jobId}
+                onChange={handleChange}
+                placeholder="e.g. EMP-1042"
+                className={inputClass(!!errors.jobId)}
               />
             </FormInput>
 
@@ -299,8 +322,7 @@ const Signup = () => {
               type="submit"
               id="signup-submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg text-white text-sm font-semibold transition-opacity flex items-center justify-center gap-2 disabled:opacity-60"
-              style={{ backgroundColor: '#01696f' }}
+              className="w-full py-2.5 rounded-lg bg-brand-500 text-white text-sm font-semibold transition-all duration-300 ease-spring flex items-center justify-center gap-2 hover:bg-brand-600 hover:-translate-y-0.5 hover:shadow-layered disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
               {loading ? (
                 <>

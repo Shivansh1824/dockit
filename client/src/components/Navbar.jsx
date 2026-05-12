@@ -17,12 +17,12 @@ const Navbar = ({ onMenuClick }) => {
     : 'U';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 shrink-0 z-10">
+    <header className="h-16 bg-surface border-b border-border flex items-center justify-between px-4 md:px-6 shrink-0 z-10 transition-colors">
       {/* Left: menu + logo (mobile only shows logo) */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="md:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition"
+          className="md:hidden p-1.5 rounded-lg text-gray-500 hover:bg-surface-elevated transition-colors"
           aria-label="Open sidebar"
         >
           <Menu size={20} />
@@ -46,7 +46,7 @@ const Navbar = ({ onMenuClick }) => {
           <span className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
             user.role === 'admin'
               ? 'bg-brand-50 text-brand-500'
-              : 'bg-gray-100 text-gray-600'
+              : 'bg-surface-elevated text-gray-600'
           }`}>
             {user.role === 'admin' ? 'Admin' : 'Member'}
           </span>
@@ -68,7 +68,7 @@ const Navbar = ({ onMenuClick }) => {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200 hover:border-red-200"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-300 ease-spring border border-border hover:border-red-200 hover:-translate-y-px"
           aria-label="Logout"
         >
           <LogOut size={15} />

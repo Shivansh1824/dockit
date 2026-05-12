@@ -7,10 +7,10 @@ const router = express.Router();
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
-  const { name, email, password, role = 'member' } = req.body;
+  const { name, email, password, role = 'member', jobId } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required.' });
+  if (!name || !email || !password || !jobId) {
+    return res.status(400).json({ message: 'All fields (including Job ID) are required.' });
   }
   if (password.length < 6) {
     return res.status(400).json({ message: 'Password must be at least 6 characters.' });
@@ -25,8 +25,8 @@ router.post('/signup', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const result = await query(
-      `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role`,
-      [name.trim(), email.trim().toLowerCase(), hashedPassword, role]
+      `INSERT INTO users (name, email, password, role, job_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, job_id`,
+      [name.trim(), email.trim().toLowerCase(), hashedPassword, role, jobId.trim()]
     );
 
     res.status(201).json({ message: 'Account created successfully.' });
@@ -69,7 +69,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, jobId: user.job_id },
     });
   } catch (err) {
     console.error('Login error:', err);

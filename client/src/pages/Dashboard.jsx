@@ -76,8 +76,8 @@ const Dashboard = () => {
           {/* KPI Cards */}
           <section aria-label="Key performance indicators">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {KPI_DATA.map((kpi) => (
-                <KPICard key={kpi.label} {...kpi} />
+              {KPI_DATA.map((kpi, index) => (
+                <KPICard key={kpi.label} {...kpi} delayIndex={index} />
               ))}
             </div>
           </section>
@@ -106,10 +106,11 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {MOCK_TASKS.map((task) => (
+                    {MOCK_TASKS.map((task, index) => (
                       <tr
                         key={task.id}
-                        className="hover:bg-gray-50/60 transition-colors"
+                        className="hover:bg-gray-50/60 transition-colors animate-fade-in-up opacity-0"
+                        style={{ animationDelay: `${(index + 4) * 75}ms` }}
                       >
                         <td className="px-5 py-3.5 font-medium text-gray-800 max-w-[200px] truncate">
                           {task.title}
@@ -123,7 +124,7 @@ const Dashboard = () => {
                         <td className="px-5 py-3.5">
                           <StatusBadge status={task.status} />
                         </td>
-                        <td className="px-5 py-3.5 hidden md:table-cell">
+                        <td className="px-5 py-3.5 hidden md:table-cell tabular-numbers">
                           <div className="flex items-center gap-1.5 text-gray-500">
                             <Calendar size={13} className="text-gray-400 shrink-0" />
                             {new Date(task.due).toLocaleDateString('en-US', {

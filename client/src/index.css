@@ -8,15 +8,23 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 m-0 p-0;
+    background-color: theme('colors.surface.elevated');
+    @apply text-gray-900 m-0 p-0;
+    text-wrap: pretty; /* SKILL.md: Avoid orphaned words */
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', system-ui, sans-serif;
+    text-wrap: balance; /* SKILL.md: Equal line lengths for headings */
+  }
+
+  /* Remove generic autofill background */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
@@ -38,5 +46,10 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: #d1d5db;
     border-radius: 9999px;
+  }
+  
+  /* SKILL.md: Tabular nums for stats/dates */
+  .tabular-numbers {
+    font-variant-numeric: tabular-nums;
   }
 }
