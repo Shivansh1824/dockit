@@ -1,18 +1,42 @@
-const KPICard = ({ label, value, icon: Icon, iconColor = 'text-brand-500', bgColor = 'bg-brand-50', warning = false, delayIndex = 0 }) => (
-  <div 
-    className={`bg-surface rounded-xl border p-5 flex items-start gap-4 shadow-sm transition-all duration-300 ease-spring hover:-translate-y-1 hover:shadow-layered animate-fade-in-up ${
-      warning ? 'border-red-200 hover:border-red-300' : 'border-border hover:border-brand-200'
-    }`}
-    style={{ animationDelay: `${delayIndex * 75}ms` }}
-  >
-    <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${warning ? 'bg-red-50' : bgColor}`}>
-      <Icon size={20} className={warning ? 'text-red-500' : iconColor} />
+import { TrendingUp, TrendingDown } from 'lucide-react';
+
+const KPICard = ({ label, value, icon: Icon, bgColor, iconColor, warning, delayIndex = 0 }) => {
+  return (
+    <div
+      className="glass p-5 rounded-3xl group hover:-translate-y-1 transition-all duration-500 ease-spring animate-fade-in-up"
+      style={{ animationDelay: `${delayIndex * 100}ms` }}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-2xl ${bgColor} ${iconColor} group-hover:scale-110 transition-transform duration-500`}>
+          <Icon size={22} />
+        </div>
+        <div className="flex flex-col items-end">
+          <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${warning ? 'text-red-500' : 'text-green-500'}`}>
+            {warning ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+            <span>{warning ? '-12%' : '+8.4%'}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h3 className="text-sm font-medium text-gray-500 mb-1">{label}</h3>
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold text-gray-900 tabular-numbers tracking-tight">
+            {value}
+          </span>
+          <span className="text-xs font-medium text-gray-400">vs last month</span>
+        </div>
+      </div>
+
+      {/* Decorative progress bar */}
+      <div className="mt-4 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+        <div 
+          className={`h-full rounded-full transition-all duration-1000 ease-out delay-500 ${warning ? 'bg-red-500' : 'bg-brand-500'}`}
+          style={{ width: warning ? '40%' : '75%' }}
+        />
+      </div>
     </div>
-    <div>
-      <p className="text-sm text-gray-500 font-medium">{label}</p>
-      <p className={`text-3xl font-bold mt-0.5 tabular-numbers ${warning ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
-    </div>
-  </div>
-);
+  );
+};
 
 export default KPICard;

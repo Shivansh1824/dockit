@@ -183,7 +183,7 @@ const Signup = () => {
         const mockUser = { id: 'mock-' + Date.now(), name: form.name, email: form.email, role: form.role, jobId: form.jobId };
         login(mockUser, 'mock_token_' + Date.now());
       } else {
-        const { data } = await api.post('/auth/signup', {
+        await api.post('/auth/signup', {
           name: form.name.trim(),
           email: form.email.trim(),
           jobId: form.jobId.trim(),

@@ -8,6 +8,7 @@ const router = express.Router();
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
+  console.log('Signup attempt:', req.body.email, req.body.jobId);
   const { name, email, password, role = 'member', jobId } = req.body;
 
   if (!name || !email || !password || !jobId) {
