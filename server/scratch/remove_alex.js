@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { query } = require('./src/db');
+const { query } = require('../src/db');
 
 async function removeAlex() {
   try {
