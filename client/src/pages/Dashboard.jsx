@@ -49,7 +49,7 @@ const Dashboard = () => {
           api.get('/tasks')
         ]);
         setStats(statsRes.data);
-        setTasks(tasksRes.data.slice(0, 5)); // Only show top 5
+        setTasks(tasksRes.data.slice(0, 8)); // Show top 8
       } catch (err) {
         console.error('Dashboard data fetch error:', err);
       } finally {
@@ -101,7 +101,7 @@ const Dashboard = () => {
                 </h1>
                 <p className="text-gray-500 text-lg font-medium max-w-xl leading-relaxed">
                   {loading ? 'Analyzing your workspace performance...' : (
-                    <>You have <span className="text-gray-900 font-semibold">{tasks.filter(t => t.status === 'overdue').length} overdue tasks</span> that need your attention today.</>
+                    <>You have <span className="text-gray-900 font-semibold">{tasks.filter(t => t.status === 'overdue' || (t.status === 'todo' && new Date(t.due_date) < new Date())).length} tasks</span> that need urgent attention today.</>
                   )}
                 </p>
               </div>

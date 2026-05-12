@@ -126,78 +126,120 @@ const Team = () => {
                 ))}
              </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {team.map((member, index) => {
-                const m = mapMember(member);
-                return (
-                  <div 
-                    key={m.id} 
-                    className="glass p-6 rounded-3xl group hover:-translate-y-1.5 transition-all duration-500 ease-spring animate-fade-in-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="relative">
-                        <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-lg font-bold text-brand-600 border border-brand-100 group-hover:scale-110 transition-transform duration-500">
-                          {m.avatar}
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 p-1 bg-white rounded-lg shadow-sm border border-gray-50">
-                          <StatusDot status={m.status} />
-                        </div>
-                      </div>
-                      <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors">
-                        <MoreVertical size={18} />
-                      </button>
-                    </div>
-
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-gray-900">{m.name}</h3>
-                        <RoleBadge role={m.role} />
-                      </div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{m.dept} Team</p>
-                    </div>
-
-                    <div className="space-y-3 mb-8">
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <Mail size={16} className="text-gray-400" />
-                        <span className="truncate">{m.email}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <Shield size={16} className="text-gray-400" />
-                        <span>Access Level: {m.role}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-600">
-                        <Clock size={16} className="text-gray-400" />
-                        <span>Last Active: 2h ago</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button className="flex-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white transition-all duration-500 flex items-center justify-center gap-2 border border-transparent hover:border-brand-100">
-                        <MessageSquare size={14} />
-                        Message
-                      </button>
-                      <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:text-brand-500 hover:bg-brand-50 transition-all border border-transparent hover:border-brand-100">
-                        <ExternalLink size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Invite Card */}
-              {user?.role === 'admin' && (
-                <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center group hover:border-brand-300 hover:bg-brand-50/10 transition-all duration-500">
-                  <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 mb-4 group-hover:bg-brand-100 group-hover:text-brand-500 transition-all duration-500">
-                    <Plus size={24} />
-                  </div>
-                  <h4 className="font-bold text-gray-900 mb-1">Add Team Member</h4>
-                  <p className="text-xs text-gray-500 mb-6 px-4">Expand your team and collaborate on high-impact projects.</p>
-                  <button className="flex items-center gap-2 text-brand-500 text-sm font-bold hover:gap-3 transition-all">
-                    Send Invitation
-                    <ChevronRight size={16} />
-                  </button>
+            <div className="space-y-12">
+              {/* Active Members Section */}
+              <section>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="h-px flex-1 bg-gray-100" />
+                  <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Active Team Members</h2>
+                  <div className="h-px flex-1 bg-gray-100" />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {team.filter(m => m.is_active !== false).map((member, index) => {
+                    const m = mapMember(member);
+                    return (
+                      <div 
+                        key={m.id} 
+                        className="glass p-6 rounded-3xl group hover:-translate-y-1.5 transition-all duration-500 ease-spring animate-fade-in-up"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="relative">
+                            <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-lg font-bold text-brand-600 border border-brand-100 group-hover:scale-110 transition-transform duration-500">
+                              {m.avatar}
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 p-1 bg-white rounded-lg shadow-sm border border-gray-50">
+                              <StatusDot status={m.status} />
+                            </div>
+                          </div>
+                          <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors">
+                            <MoreVertical size={18} />
+                          </button>
+                        </div>
+
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-bold text-gray-900">{m.name}</h3>
+                            <RoleBadge role={m.role} />
+                          </div>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{m.dept} Team</p>
+                        </div>
+
+                        <div className="space-y-3 mb-8">
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <Mail size={16} className="text-gray-400" />
+                            <span className="truncate">{m.email}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <Shield size={16} className="text-gray-400" />
+                            <span>Access Level: {m.role}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <button className="flex-1 py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-brand-500 hover:text-white transition-all duration-500 flex items-center justify-center gap-2 border border-transparent hover:border-brand-100">
+                            <MessageSquare size={14} />
+                            Message
+                          </button>
+                          <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:text-brand-500 hover:bg-brand-50 transition-all border border-transparent hover:border-brand-100">
+                            <ExternalLink size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Invite Card */}
+                  {user?.role === 'admin' && (
+                    <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center group hover:border-brand-300 hover:bg-brand-50/10 transition-all duration-500">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 mb-4 group-hover:bg-brand-100 group-hover:text-brand-500 transition-all duration-500">
+                        <Plus size={24} />
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-1">Add Team Member</h4>
+                      <p className="text-xs text-gray-500 mb-6 px-4">Expand your team and collaborate on projects.</p>
+                      <button className="flex items-center gap-2 text-brand-500 text-sm font-bold hover:gap-3 transition-all">
+                        Send Invitation
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Past Members Section */}
+              {team.some(m => m.is_active === false) && (
+                <section>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="h-px flex-1 bg-gray-100" />
+                    <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Past Team Members</h2>
+                    <div className="h-px flex-1 bg-gray-100" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {team.filter(m => m.is_active === false).map((member, index) => {
+                      const m = mapMember(member);
+                      return (
+                        <div 
+                          key={m.id} 
+                          className="glass p-6 rounded-3xl opacity-60 grayscale-[0.5] hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                        >
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-400 border border-gray-200">
+                              {m.avatar}
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-gray-700">{m.name}</h3>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Former {m.role}</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-4 truncate">{m.email}</p>
+                          <button className="w-full py-2 bg-gray-50 text-gray-400 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-brand-50 hover:text-brand-500 transition-all">
+                            View Contribution History
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
               )}
             </div>
           )}

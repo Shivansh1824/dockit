@@ -193,7 +193,7 @@ router.post('/google-complete', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const result = await query(
-      'SELECT id, name, email, role, job_id, created_at FROM users ORDER BY name ASC'
+      'SELECT id, name, email, role, job_id, is_active, created_at FROM users ORDER BY name ASC'
     );
     res.json(result.rows);
   } catch (err) {
