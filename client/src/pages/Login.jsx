@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Eye,
@@ -127,7 +127,7 @@ const inputClass = (hasError) =>
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, pendingGoogleProfile } = useAuth();
 
   const successMsg = new URLSearchParams(location.search).get('msg') || '';
 
@@ -136,6 +136,20 @@ const Login = () => {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+
+  // 1. If already authenticated, go to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // 2. If new Google user, go to onboarding
+  useEffect(() => {
+    if (pendingGoogleProfile) {
+      navigate('/onboarding', { replace: true });
+    }
+  }, [pendingGoogleProfile, navigate]);
 
   const validate = () => {
     const e = {};
@@ -164,14 +178,12 @@ const Login = () => {
         await new Promise((r) => setTimeout(r, 900));
         const mockUser = { id: 'mock-1', name: 'Demo User', email: form.email, role: 'admin' };
         login(mockUser, 'mock_token_' + Date.now());
-        navigate('/dashboard');
       } else {
         const { data } = await api.post('/auth/login', {
           email: form.email,
           password: form.password,
         });
         login(data.user, data.token);
-        navigate('/dashboard');
       }
     } catch (err) {
       setServerError(

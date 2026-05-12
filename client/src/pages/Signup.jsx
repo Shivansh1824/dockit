@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Eye,
@@ -13,6 +13,7 @@ import {
 import api from '../api/axios';
 import DockitLogo from '../components/DockitLogo';
 import { supabase } from '../supabase';
+import { useAuth } from '../context/AuthContext';
 
 const MOCK_MODE = import.meta.env.VITE_MOCK_AUTH === 'true';
 
@@ -25,7 +26,7 @@ const BrandPanel = () => (
     {/* Decorative atmospheric blobs */}
     <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
       <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[50%] rounded-full opacity-30 blur-[80px]" style={{ background: 'radial-gradient(circle, #33afb4 0%, transparent 70%)' }} />
-      <div className="absolute top-[60%] -right-[20%] w-[60%] h-[60%] rounded-full opacity-20 blur-[100px]" style={{ background: 'radial-gradient(circle, #01696f 0%, transparent 70%)' }} />
+      <div className="absolute top-[60%] -right-[20%] w-[60%] h-[60%] rounded-full opacity-20 blur-[100px]" style={{ background: 'radial-gradient(circle, #01696f) 0%, transparent 70%)' }} />
       {/* Subtle grid texture */}
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
     </div>
@@ -119,6 +120,21 @@ const FormInput = ({ id, label, error, children }) => (
 // ═══════════════════════════════
 const Signup = () => {
   const navigate = useNavigate();
+  const { login, isAuthenticated, pendingGoogleProfile } = useAuth();
+
+  // 1. If already authenticated, skip signup and go to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // 2. If new Google user, go to onboarding
+  useEffect(() => {
+    if (pendingGoogleProfile) {
+      navigate('/onboarding', { replace: true });
+    }
+  }, [pendingGoogleProfile, navigate]);
 
   const [form, setForm] = useState({
     name: '',
@@ -164,16 +180,23 @@ const Signup = () => {
     try {
       if (MOCK_MODE) {
         await new Promise((r) => setTimeout(r, 900));
-        navigate('/login?msg=' + encodeURIComponent('Account created! Please sign in.'));
+        const mockUser = { id: 'mock-' + Date.now(), name: form.name, email: form.email, role: form.role, jobId: form.jobId };
+        login(mockUser, 'mock_token_' + Date.now());
       } else {
-        await api.post('/auth/signup', {
+        const { data } = await api.post('/auth/signup', {
           name: form.name.trim(),
           email: form.email.trim(),
           jobId: form.jobId.trim(),
           password: form.password,
           role: form.role,
         });
-        navigate('/login?msg=' + encodeURIComponent('Account created! Please sign in.'));
+        
+        // After signup, automatically log them in
+        const loginRes = await api.post('/auth/login', {
+            email: form.email.trim(),
+            password: form.password
+        });
+        login(loginRes.data.user, loginRes.data.token);
       }
     } catch (err) {
       setServerError(

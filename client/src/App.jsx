@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 
 const App = () => (
@@ -10,8 +11,9 @@ const App = () => (
     <AuthProvider>
       <Routes>
         {/* Public */}
-        <Route path="/login"  element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/login"      element={<Login />} />
+        <Route path="/signup"     element={<Signup />} />
+        <Route path="/onboarding" element={<Onboarding />} />
 
         {/* Protected */}
         <Route

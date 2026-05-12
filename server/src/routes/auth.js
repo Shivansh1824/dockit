@@ -79,6 +79,7 @@ router.post('/login', async (req, res) => {
 });
 
 // POST /api/auth/google-sync
+// Returns user data if they exist, or { needsOnboarding: true, email, name } if they are new.
 router.post('/google-sync', async (req, res) => {
   const { accessToken } = req.body;
 
@@ -94,31 +95,25 @@ router.post('/google-sync', async (req, res) => {
     }
 
     const email = sbUser.email.toLowerCase();
-    const name = sbUser.user_metadata.full_name || sbUser.user_metadata.name || 'Google User';
+    const name = sbUser.user_metadata.full_name || sbUser.user_metadata.name || '';
+    const avatar = sbUser.user_metadata.avatar_url || '';
 
     // 2. Check if user exists in our DB
-    let result = await query(
+    const result = await query(
       'SELECT id, name, email, role, job_id FROM users WHERE email = $1',
       [email]
     );
 
-    let user;
     if (result.rows.length === 0) {
-      // 3. Create user if they don't exist
-      // Since it's a Google user, we use a placeholder password and a generated jobId
-      const placeholderPassword = await bcrypt.hash(Math.random().toString(36), 12);
-      const generatedJobId = 'G-' + Math.floor(1000 + Math.random() * 9000);
-      
-      const insertResult = await query(
-        `INSERT INTO users (name, email, password, role, job_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, job_id`,
-        [name, email, placeholderPassword, 'member', generatedJobId]
-      );
-      user = insertResult.rows[0];
-    } else {
-      user = result.rows[0];
+      // --- NEW USER: send back onboarding signal ---
+      return res.json({
+        needsOnboarding: true,
+        profile: { email, name, avatar },
+      });
     }
 
-    // 4. Generate local JWT
+    // --- EXISTING USER: log them in immediately ---
+    const user = result.rows[0];
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -126,12 +121,69 @@ router.post('/google-sync', async (req, res) => {
     );
 
     res.json({
+      needsOnboarding: false,
       token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, jobId: user.job_id },
     });
   } catch (err) {
     console.error('Google sync error:', err);
     res.status(500).json({ message: 'Server error during sync.' });
+  }
+});
+
+// POST /api/auth/google-complete
+// Called from the onboarding page to finalize a new Google user's profile.
+router.post('/google-complete', async (req, res) => {
+  const { accessToken, jobId, role } = req.body;
+
+  if (!accessToken || !jobId || !role) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  try {
+    // 1. Re-verify token with Supabase to ensure it hasn't been tampered
+    const { data: { user: sbUser }, error } = await supabase.auth.getUser(accessToken);
+    if (error || !sbUser) {
+      return res.status(401).json({ message: 'Session expired. Please sign in again.' });
+    }
+
+    const email = sbUser.email.toLowerCase();
+    const name = sbUser.user_metadata.full_name || sbUser.user_metadata.name || 'Google User';
+
+    // 2. Ensure user doesn't already exist (race condition guard)
+    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ message: 'Account already exists. Please log in.' });
+    }
+
+    // 3. Also check Job ID uniqueness
+    const existingJobId = await query('SELECT id FROM users WHERE job_id = $1', [jobId.trim()]);
+    if (existingJobId.rows.length > 0) {
+      return res.status(409).json({ message: 'This Job ID is already in use. Please choose a different one.' });
+    }
+
+    // 4. Create the user with a secure placeholder password (they use Google to log in)
+    const placeholderPassword = await bcrypt.hash(sbUser.id + process.env.JWT_SECRET, 12);
+    const insertResult = await query(
+      `INSERT INTO users (name, email, password, role, job_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, job_id`,
+      [name, email, placeholderPassword, role, jobId.trim()]
+    );
+    const user = insertResult.rows[0];
+
+    // 5. Issue a JWT so they're instantly logged in
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    res.status(201).json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, jobId: user.job_id },
+    });
+  } catch (err) {
+    console.error('Google complete error:', err);
+    res.status(500).json({ message: 'Server error. Please try again.' });
   }
 });
 
