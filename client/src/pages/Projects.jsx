@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -15,79 +15,43 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import ProjectCard from '../components/ProjectCard';
 import { useAuth } from '../context/AuthContext';
-
-const PROJECTS_DATA = [
-  { 
-    id: 1, 
-    name: 'Dockit v1.0 Launch', 
-    category: 'Product Design', 
-    progress: 75, 
-    status: 'On Track', 
-    team: ['Alex R.', 'Sarah K.'], 
-    dueDate: 'May 24, 2026', 
-    color: 'text-brand-500' 
-  },
-  { 
-    id: 2, 
-    name: 'AI Integration Phase 2', 
-    category: 'Engineering', 
-    progress: 45, 
-    status: 'At Risk', 
-    team: ['Mike D.', 'Lisa W.'], 
-    dueDate: 'June 12, 2026', 
-    color: 'text-orange-500' 
-  },
-  { 
-    id: 3, 
-    name: 'Brand Refresh 2026', 
-    category: 'Marketing', 
-    progress: 92, 
-    status: 'Completed', 
-    team: ['Emma S.', 'John B.'], 
-    dueDate: 'Completed', 
-    color: 'text-blue-500' 
-  },
-  { 
-    id: 4, 
-    name: 'Mobile App Refactor', 
-    category: 'Engineering', 
-    progress: 15, 
-    status: 'Delayed', 
-    team: ['Tom H.', 'Chris P.'], 
-    dueDate: 'July 04, 2026', 
-    color: 'text-red-500' 
-  },
-  { 
-    id: 5, 
-    name: 'Customer Success Portal', 
-    category: 'Operations', 
-    progress: 60, 
-    status: 'On Track', 
-    team: ['Rachel G.', 'David M.'], 
-    dueDate: 'May 30, 2026', 
-    color: 'text-brand-500' 
-  },
-  { 
-    id: 6, 
-    name: 'Global Expansion Research', 
-    category: 'Strategy', 
-    progress: 30, 
-    status: 'On Track', 
-    team: ['Kevin L.', 'Monica B.'], 
-    dueDate: 'Aug 15, 2026', 
-    color: 'text-brand-500' 
-  },
-];
+import api from '../api/axios';
 
 const Projects = () => {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [view, setView] = useState('grid'); // grid | list
+  const [view, setView] = useState('grid');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Filter projects based on role
-  const displayedProjects = user?.role === 'admin' 
-    ? PROJECTS_DATA 
-    : PROJECTS_DATA.filter(p => p.team.some(name => name.startsWith(user?.name?.split(' ')[0]) || name === 'Sarah K.')); // Simulating assignment for demo
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get('/projects');
+        setProjects(data);
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+        setError('Failed to load projects. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  // Map backend project to ProjectCard props
+  const mapProject = (p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.description || 'Project',
+    progress: p.progress || 0, // Need to handle this on backend eventually
+    status: p.status || 'On Track',
+    team: [p.creator_name || 'Admin'],
+    dueDate: p.due_date ? new Date(p.due_date).toLocaleDateString() : 'No Deadline',
+    color: 'text-brand-500'
+  });
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-jakarta">
@@ -101,7 +65,7 @@ const Projects = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">Projects</h1>
-              <p className="text-gray-500 text-sm">Managing {PROJECTS_DATA.length} active initiatives in your workspace.</p>
+              <p className="text-gray-500 text-sm">Managing {projects.length} active initiatives in your workspace.</p>
             </div>
             {user?.role === 'admin' && (
               <button className="flex items-center gap-2 px-5 py-2.5 bg-brand-500 text-white rounded-2xl font-bold text-sm hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 active:scale-95 self-start">
@@ -111,13 +75,20 @@ const Projects = () => {
             )}
           </div>
 
+          {error && (
+            <div className="glass p-4 rounded-2xl bg-red-50 text-red-600 text-sm mb-8 flex items-center gap-3">
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
+
           {/* Quick Stats Bar */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
-              { label: 'Total Projects', value: '12', icon: Layers, color: 'text-gray-400' },
-              { label: 'Completed', value: '8', icon: CheckCircle2, color: 'text-green-500' },
-              { label: 'On Track', value: '3', icon: Clock, color: 'text-brand-500' },
-              { label: 'Requires Attention', value: '1', icon: AlertCircle, color: 'text-red-500' },
+              { label: 'Total Projects', value: projects.length.toString(), icon: Layers, color: 'text-gray-400' },
+              { label: 'Completed', value: projects.filter(p => p.status === 'Completed').length.toString(), icon: CheckCircle2, color: 'text-green-500' },
+              { label: 'On Track', value: projects.filter(p => p.status === 'On Track' || !p.status).length.toString(), icon: Clock, color: 'text-brand-500' },
+              { label: 'Requires Attention', value: projects.filter(p => p.status === 'At Risk' || p.status === 'Delayed').length.toString(), icon: AlertCircle, color: 'text-red-500' },
             ].map((stat, i) => (
               <div key={i} className="glass p-4 rounded-2xl flex items-center gap-4">
                 <div className={`p-2.5 rounded-xl bg-white shadow-sm ${stat.color}`}>
@@ -165,26 +136,34 @@ const Projects = () => {
           </div>
 
           {/* Project Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {displayedProjects.map((project, index) => (
-              <ProjectCard key={project.id} project={project} delayIndex={index} />
-            ))}
-            
-            {/* Template Card */}
-            {user?.role === 'admin' && (
-              <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center group hover:border-brand-300 hover:bg-brand-50/10 transition-all duration-500">
-                <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4 group-hover:bg-brand-100 group-hover:text-brand-500 transition-all duration-500">
-                  <Plus size={24} />
+          {loading ? (
+             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-pulse">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="glass h-64 rounded-3xl" />
+                ))}
+             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {projects.map((project, index) => (
+                <ProjectCard key={project.id} project={mapProject(project)} delayIndex={index} />
+              ))}
+              
+              {/* Template Card */}
+              {user?.role === 'admin' && (
+                <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center group hover:border-brand-300 hover:bg-brand-50/10 transition-all duration-500">
+                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 mb-4 group-hover:bg-brand-100 group-hover:text-brand-500 transition-all duration-500">
+                    <Plus size={24} />
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-1">Create New Initiative</h4>
+                  <p className="text-xs text-gray-500 mb-6 px-4">Start from a template or a blank project and invite your team.</p>
+                  <button className="flex items-center gap-2 text-brand-500 text-sm font-bold hover:gap-3 transition-all">
+                    Browse Templates
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
-                <h4 className="font-bold text-gray-900 mb-1">Create New Initiative</h4>
-                <p className="text-xs text-gray-500 mb-6 px-4">Start from a template or a blank project and invite your team.</p>
-                <button className="flex items-center gap-2 text-brand-500 text-sm font-bold hover:gap-3 transition-all">
-                  Browse Templates
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>

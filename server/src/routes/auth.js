@@ -188,4 +188,18 @@ router.post('/google-complete', async (req, res) => {
   }
 });
 
+// GET /api/auth/users
+// Fetch all users for the team directory
+router.get('/users', async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT id, name, email, role, job_id, created_at FROM users ORDER BY name ASC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Fetch users error:', err);
+    res.status(500).json({ message: 'Error fetching users.' });
+  }
+});
+
 module.exports = router;

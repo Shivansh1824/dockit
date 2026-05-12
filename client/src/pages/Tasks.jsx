@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -7,20 +7,13 @@ import {
   MoreVertical,
   ArrowRight,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  AlertCircle
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-
-const MOCK_TASKS = [
-  { id: 1, title: 'Design onboarding flow', project: 'Dockit v1.0', status: 'done',        due: '2026-05-10', priority: 'High',    assignee: 'Sarah K.' },
-  { id: 2, title: 'API performance audit',  project: 'Core Engine', status: 'in_progress', due: '2026-05-15', priority: 'Critical', assignee: 'Alex R.' },
-  { id: 3, title: 'Client feedback sync',   project: 'Marketing',   status: 'todo',        due: '2026-05-18', priority: 'Medium',   assignee: 'John B.' },
-  { id: 4, title: 'Security patch v2.1',    project: 'Infrastructure', status: 'overdue',     due: '2026-05-08', priority: 'Critical', assignee: 'Mike D.' },
-  { id: 5, title: 'Mobile UI Kit update',   project: 'Dockit v1.0', status: 'in_progress', due: '2026-05-20', priority: 'High',    assignee: 'Sarah K.' },
-  { id: 6, title: 'Database migration',     project: 'Core Engine', status: 'todo',        due: '2026-05-25', priority: 'Low',      assignee: 'Tom H.' },
-];
+import api from '../api/axios';
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -55,11 +48,36 @@ const PriorityIndicator = ({ priority }) => {
 const Tasks = () => {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [view, setView] = useState('list'); // list | kanban
+  const [view, setView] = useState('list');
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const displayedTasks = user?.role === 'admin' 
-    ? MOCK_TASKS 
-    : MOCK_TASKS.filter(t => t.assignee.startsWith(user?.name?.split(' ')[0]) || t.assignee === 'Sarah K.');
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get('/tasks');
+        setTasks(data);
+      } catch (err) {
+        console.error('Failed to fetch tasks:', err);
+        setError('Failed to load tasks.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
+
+  const mapTask = (t) => ({
+    id: t.id,
+    title: t.title,
+    project: t.project_name || 'No Project',
+    status: t.status || 'todo',
+    due: t.due_date ? new Date(t.due_date).toLocaleDateString() : 'No Due Date',
+    priority: t.priority || 'Medium',
+    assignee: t.assignee_name || 'Unassigned'
+  });
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-jakarta">
@@ -73,7 +91,7 @@ const Tasks = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">Task Master</h1>
-              <p className="text-gray-500 text-sm">Orchestrating {MOCK_TASKS.length} tasks across your workspace.</p>
+              <p className="text-gray-500 text-sm">Orchestrating {tasks.length} tasks across your workspace.</p>
             </div>
             {user?.role === 'admin' && (
               <button className="flex items-center gap-2 px-5 py-2.5 bg-brand-500 text-white rounded-2xl font-bold text-sm hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 active:scale-95 self-start">
@@ -82,6 +100,13 @@ const Tasks = () => {
               </button>
             )}
           </div>
+
+          {error && (
+            <div className="glass p-4 rounded-2xl bg-red-50 text-red-600 text-sm mb-8 flex items-center gap-3">
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
 
           {/* View Selection & Filters */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
@@ -119,7 +144,13 @@ const Tasks = () => {
           </div>
 
           {/* Task Content */}
-          {view === 'list' ? (
+          {loading ? (
+             <div className="space-y-4 animate-pulse">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="glass h-20 rounded-3xl" />
+                ))}
+             </div>
+          ) : view === 'list' ? (
             <div className="glass rounded-[2rem] overflow-hidden shadow-layered">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -132,53 +163,56 @@ const Tasks = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100/50">
-                  {displayedTasks.map((task, index) => (
-                    <tr 
-                      key={task.id} 
-                      className="group hover:bg-brand-50/5 transition-colors animate-fade-in-up"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <td className="px-6 py-5">
-                        <div className="flex items-start gap-4">
-                          <div className="mt-1">
-                            <PriorityIndicator priority={task.priority} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900 mb-1 group-hover:text-brand-500 transition-colors">{task.title}</p>
-                            <div className="flex items-center gap-3 text-[11px] text-gray-400 font-medium">
-                              <span className="flex items-center gap-1"><Calendar size={12} /> {task.due}</span>
-                              <span className="w-1 h-1 rounded-full bg-gray-200" />
-                              <span>ID: TASK-{1000 + task.id}</span>
+                  {tasks.map((task, index) => {
+                    const t = mapTask(task);
+                    return (
+                      <tr 
+                        key={t.id} 
+                        className="group hover:bg-brand-50/5 transition-colors animate-fade-in-up"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <td className="px-6 py-5">
+                          <div className="flex items-start gap-4">
+                            <div className="mt-1">
+                              <PriorityIndicator priority={t.priority} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900 mb-1 group-hover:text-brand-500 transition-colors">{t.title}</p>
+                              <div className="flex items-center gap-3 text-[11px] text-gray-400 font-medium">
+                                <span className="flex items-center gap-1"><Calendar size={12} /> {t.due}</span>
+                                <span className="w-1 h-1 rounded-full bg-gray-200" />
+                                <span className="uppercase tracking-widest">TASK-{t.id.slice(0, 4)}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-xs font-bold text-gray-600 px-3 py-1 bg-gray-100 rounded-full">{task.project}</span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <StatusBadge status={task.status} />
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-brand-50 flex items-center justify-center text-[10px] font-bold text-brand-600 border border-brand-100">
-                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-xs font-bold text-gray-600 px-3 py-1 bg-gray-100 rounded-full">{t.project}</span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <StatusBadge status={t.status} />
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-brand-50 flex items-center justify-center text-[10px] font-bold text-brand-600 border border-brand-100">
+                              {t.assignee.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <span className="text-xs font-semibold text-gray-700">{t.assignee}</span>
                           </div>
-                          <span className="text-xs font-semibold text-gray-700">{task.assignee}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 text-gray-400 hover:text-brand-500 hover:bg-brand-50 rounded-lg transition-all" title="View Details">
-                            <ArrowRight size={16} />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all">
-                            <MoreVertical size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="p-2 text-gray-400 hover:text-brand-500 hover:bg-brand-50 rounded-lg transition-all" title="View Details">
+                              <ArrowRight size={16} />
+                            </button>
+                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all">
+                              <MoreVertical size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -193,34 +227,37 @@ const Tasks = () => {
                         {status.replace('_', ' ')}
                       </h3>
                       <span className="text-xs font-bold text-gray-400 ml-2 bg-gray-50 px-2 py-0.5 rounded-full">
-                        {MOCK_TASKS.filter(t => t.status === status).length}
+                        {tasks.filter(t => t.status === status).length}
                       </span>
                     </div>
                   </div>
                   
                   <div className="space-y-4">
-                    {displayedTasks.filter(t => t.status === status || (status === 'todo' && t.status === 'overdue')).map((task) => (
-                      <div key={task.id} className="glass p-5 rounded-3xl hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-layered group cursor-grab active:cursor-grabbing">
-                        <div className="flex justify-between items-start mb-3">
-                          <PriorityIndicator priority={task.priority} />
-                          <button className="text-gray-300 hover:text-gray-500 transition-colors">
-                            <MoreVertical size={14} />
-                          </button>
-                        </div>
-                        <h4 className="text-sm font-bold text-gray-900 mb-4 group-hover:text-brand-500 transition-colors">{task.title}</h4>
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-100/50">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-brand-50 flex items-center justify-center text-[8px] font-bold text-brand-600">
-                              {task.assignee.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{task.due}</span>
+                    {tasks.filter(t => t.status === status || (status === 'todo' && t.status === 'overdue')).map((task) => {
+                      const t = mapTask(task);
+                      return (
+                        <div key={t.id} className="glass p-5 rounded-3xl hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-layered group cursor-grab active:cursor-grabbing">
+                          <div className="flex justify-between items-start mb-3">
+                            <PriorityIndicator priority={t.priority} />
+                            <button className="text-gray-300 hover:text-gray-500 transition-colors">
+                              <MoreVertical size={14} />
+                            </button>
                           </div>
-                          <span className="text-[9px] font-bold text-gray-400 uppercase bg-gray-50 px-2 py-1 rounded-lg">
-                            {task.project.split(' ')[0]}
-                          </span>
+                          <h4 className="text-sm font-bold text-gray-900 mb-4 group-hover:text-brand-500 transition-colors">{t.title}</h4>
+                          <div className="flex items-center justify-between pt-4 border-t border-gray-100/50">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-brand-50 flex items-center justify-center text-[8px] font-bold text-brand-600">
+                                {t.assignee.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.due}</span>
+                            </div>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase bg-gray-50 px-2 py-1 rounded-lg">
+                              {t.project.split(' ')[0]}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
                     {user?.role === 'admin' && (
                       <button className="w-full py-3 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400 text-xs font-bold hover:border-brand-200 hover:bg-brand-50/5 hover:text-brand-500 transition-all">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ClipboardList,
   Clock,
@@ -15,6 +15,7 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import KPICard from '../components/KPICard';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 // ── Status badge ──
 const StatusBadge = ({ status }) => {
@@ -32,27 +33,47 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// ── Mock task data ──
-const MOCK_TASKS = [
-  { id: 1, title: 'Design onboarding flow',   project: 'Dockit v1.0',  status: 'done',        due: '2026-05-10', priority: 'High' },
-  { id: 2, title: 'Set up CI/CD pipeline',    project: 'Infrastructure', status: 'in_progress', due: '2026-05-14', priority: 'Medium' },
-  { id: 3, title: 'Write API documentation',  project: 'Dockit v1.0',  status: 'todo',        due: '2026-05-18', priority: 'Low' },
-  { id: 4, title: 'Fix login redirect bug',   project: 'Bug Fixes',    status: 'overdue',     due: '2026-05-08', priority: 'Critical' },
-  { id: 5, title: 'User acceptance testing',  project: 'QA Sprint',    status: 'in_progress', due: '2026-05-15', priority: 'High' },
-];
-
-const KPI_DATA = [
-  { label: 'Total Tasks',  value: 24, icon: ClipboardList, bgColor: 'bg-brand-50',  iconColor: 'text-brand-500' },
-  { label: 'In Progress',  value: 8,  icon: Clock,         bgColor: 'bg-blue-50',   iconColor: 'text-blue-500' },
-  { label: 'Completed',    value: 12, icon: CheckCircle2,  bgColor: 'bg-green-50',  iconColor: 'text-green-600' },
-  { label: 'Overdue',      value: 4,  icon: AlertTriangle, bgColor: 'bg-red-50',    iconColor: 'text-red-500', warning: true },
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [statsRes, tasksRes] = await Promise.all([
+          api.get('/dashboard/stats'),
+          api.get('/tasks')
+        ]);
+        setStats(statsRes.data);
+        setTasks(tasksRes.data.slice(0, 5)); // Only show top 5
+      } catch (err) {
+        console.error('Dashboard data fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
   const firstName = user?.name?.split(' ')[0] || 'there';
+
+  const KPI_ICONS = {
+    'Active Projects': FolderKanban,
+    'Tasks Completed': CheckCircle2,
+    'Team Efficiency': TrendingUp,
+    'Avg. Response': Clock
+  };
+
+  const KPI_COLORS = {
+    'Active Projects': 'bg-brand-50 text-brand-500',
+    'Tasks Completed': 'bg-green-50 text-green-600',
+    'Team Efficiency': 'bg-blue-50 text-blue-500',
+    'Avg. Response': 'bg-orange-50 text-orange-500'
+  };
 
   return (
     <div className="flex h-screen bg-[#fcfcfd] overflow-hidden font-sans">
