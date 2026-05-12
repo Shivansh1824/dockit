@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import DockitLogo from '../components/DockitLogo';
+import { supabase } from '../supabase';
 
 const MOCK_MODE = import.meta.env.VITE_MOCK_AUTH === 'true';
 
@@ -79,13 +80,13 @@ const BrandPanel = () => (
   </div>
 );
 
-// ── Google mock button ──
-const GoogleButton = () => (
+// ── Google button ──
+const GoogleButton = ({ onClick, loading }) => (
   <button
     type="button"
-    disabled
-    title="Google sign-in coming soon"
-    className="w-full py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-400 flex items-center justify-center gap-2.5 cursor-not-allowed select-none"
+    onClick={onClick}
+    disabled={loading}
+    className="w-full py-2.5 rounded-lg border border-border bg-surface text-sm font-medium text-gray-700 flex items-center justify-center gap-2.5 transition-all duration-300 ease-spring hover:bg-surface-elevated hover:shadow-layered active:scale-[0.98] disabled:opacity-60"
   >
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -94,9 +95,6 @@ const GoogleButton = () => (
       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
     </svg>
     Continue with Google
-    <span className="ml-1 text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide">
-      Soon
-    </span>
   </button>
 );
 
@@ -181,6 +179,20 @@ const Login = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      setServerError(err.message || 'Google sign-in failed.');
     }
   };
 
@@ -297,7 +309,7 @@ const Login = () => {
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          <GoogleButton />
+          <GoogleButton onClick={handleGoogleLogin} loading={loading} />
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Don&apos;t have an account?{' '}
