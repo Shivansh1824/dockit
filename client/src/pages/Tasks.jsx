@@ -73,9 +73,9 @@ const Tasks = () => {
     id: t.id,
     title: t.title,
     project: t.project_name || 'No Project',
-    status: t.status || 'todo',
+    status: t.status?.toLowerCase() || 'todo',
     due: t.due_date ? new Date(t.due_date).toLocaleDateString() : 'No Due Date',
-    priority: t.priority || 'Medium',
+    priority: t.priority ? t.priority.charAt(0).toUpperCase() + t.priority.slice(1).toLowerCase() : 'Medium',
     assignee: t.assignee_name || 'Unassigned'
   });
 

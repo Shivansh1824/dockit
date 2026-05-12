@@ -100,7 +100,9 @@ const Dashboard = () => {
                   Good morning, <span className="text-brand-500">{firstName}</span>.
                 </h1>
                 <p className="text-gray-500 text-lg font-medium max-w-xl leading-relaxed">
-                  You have <span className="text-gray-900 font-semibold">4 overdue tasks</span> that need your attention today. Let's get them sorted.
+                  {loading ? 'Analyzing your workspace performance...' : (
+                    <>You have <span className="text-gray-900 font-semibold">{tasks.filter(t => t.status === 'overdue').length} overdue tasks</span> that need your attention today.</>
+                  )}
                 </p>
               </div>
 
@@ -128,9 +130,21 @@ const Dashboard = () => {
               {/* KPI Grid */}
               <section aria-label="Key performance indicators">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {KPI_DATA.map((kpi, index) => (
-                    <KPICard key={kpi.label} {...kpi} delayIndex={index} />
-                  ))}
+                  {loading ? (
+                    [1, 2, 3, 4].map(i => <div key={i} className="glass h-32 rounded-[2rem] animate-pulse" />)
+                  ) : (
+                    stats?.kpis.map((kpi, index) => (
+                      <KPICard 
+                        key={kpi.label} 
+                        label={kpi.label}
+                        value={kpi.value}
+                        icon={KPI_ICONS[kpi.label] || ClipboardList}
+                        bgColor={KPI_COLORS[kpi.label]?.split(' ')[0] || 'bg-brand-50'}
+                        iconColor={KPI_COLORS[kpi.label]?.split(' ')[1] || 'text-brand-500'}
+                        delayIndex={index} 
+                      />
+                    ))
+                  )}
                 </div>
               </section>
 
@@ -142,10 +156,12 @@ const Dashboard = () => {
                       <h2 className="text-lg font-bold text-gray-900 tracking-tight">Active Tasks</h2>
                       <p className="text-xs text-gray-400 font-medium mt-0.5 uppercase tracking-widest">Primary Focus Area</p>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all active:scale-95 shadow-lg shadow-gray-900/10">
-                      <Plus size={14} />
-                      New Task
-                    </button>
+                    {user?.role === 'admin' && (
+                      <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all active:scale-95 shadow-lg shadow-gray-900/10">
+                        <Plus size={14} />
+                        New Task
+                      </button>
+                    )}
                   </div>
 
                   <div className="p-2">
@@ -161,41 +177,49 @@ const Dashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                          {MOCK_TASKS.map((task, index) => (
-                            <tr
-                              key={task.id}
-                              className="group hover:bg-gray-50/50 transition-all duration-300 animate-fade-in-up"
-                              style={{ animationDelay: `${(index + 4) * 50}ms` }}
-                            >
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-2 h-2 rounded-full ${
-                                    task.priority === 'Critical' ? 'bg-red-500' :
-                                    task.priority === 'High' ? 'bg-orange-500' :
-                                    task.priority === 'Medium' ? 'bg-blue-500' : 'bg-gray-300'
-                                  }`} />
-                                  <span className="font-semibold text-gray-800 tracking-tight">{task.title}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 hidden sm:table-cell text-gray-500">
-                                <div className="flex items-center gap-1.5">
-                                  <FolderKanban size={13} className="text-gray-300" />
-                                  {task.project}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <StatusBadge status={task.status} />
-                              </td>
-                              <td className="px-6 py-4 hidden md:table-cell tabular-numbers text-gray-500">
-                                {new Date(task.due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <button className="p-2 text-gray-300 hover:text-brand-500 hover:bg-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                                  <ArrowRight size={16} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                          {loading ? (
+                            [1, 2, 3].map(i => (
+                              <tr key={i} className="animate-pulse">
+                                <td colSpan={5} className="px-6 py-8"><div className="h-4 bg-gray-100 rounded w-full" /></td>
+                              </tr>
+                            ))
+                          ) : (
+                            tasks.map((task, index) => (
+                              <tr
+                                key={task.id}
+                                className="group hover:bg-gray-50/50 transition-all duration-300 animate-fade-in-up"
+                                style={{ animationDelay: `${(index + 4) * 50}ms` }}
+                              >
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                      task.priority?.toLowerCase() === 'critical' ? 'bg-red-500' :
+                                      task.priority?.toLowerCase() === 'high' ? 'bg-orange-500' :
+                                      task.priority?.toLowerCase() === 'medium' ? 'bg-blue-500' : 'bg-gray-300'
+                                    }`} />
+                                    <span className="font-semibold text-gray-800 tracking-tight capitalize">{task.title}</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 hidden sm:table-cell text-gray-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <FolderKanban size={13} className="text-gray-300" />
+                                    {task.project_name || 'No Project'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <StatusBadge status={task.status} />
+                                </td>
+                                <td className="px-6 py-4 hidden md:table-cell tabular-numbers text-gray-500">
+                                  {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No Due Date'}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <button className="p-2 text-gray-300 hover:text-brand-500 hover:bg-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                                    <ArrowRight size={16} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
